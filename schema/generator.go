@@ -1500,6 +1500,8 @@ func (g *Generator) generateDDLsForCreateTable(currentTable Table, desired Creat
 			if !g.areSameIndexes(*currentIndex, desiredIndex) {
 				ddls = append(ddls, g.generateDropIndex(desired.table.name, desiredIndex.name, desiredIndex.constraint))
 				ddls = append(ddls, g.generateAddIndex(desired.table.name, desiredIndex))
+			} else if g.mode == GeneratorModeMysql && currentIndex.invisible != desiredIndex.invisible {
+				ddls = append(ddls, g.generateAlterIndexVisibility(desired.table.name, desiredIndex.name, desiredIndex.invisible))
 			}
 		} else {
 			// Check if this is a renamed index
@@ -3222,8 +3224,19 @@ func (g *Generator) generateAddIndex(table QualifiedName, index Index) string {
 		}
 		constraintOptions := g.generateConstraintOptions(index.constraintOptions)
 		ddl += fmt.Sprintf(" (%s)%s%s", strings.Join(columns, ", "), optionDefinition, constraintOptions)
+		if index.invisible {
+			ddl += " INVISIBLE"
+		}
 		return ddl
 	}
+}
+
+func (g *Generator) generateAlterIndexVisibility(table QualifiedName, indexName Ident, invisible bool) string {
+	visibility := "VISIBLE"
+	if invisible {
+		visibility = "INVISIBLE"
+	}
+	return fmt.Sprintf("ALTER TABLE %s ALTER INDEX %s %s", g.escapeQualifiedName(table), g.escapeSQLIdent(indexName), visibility)
 }
 
 func (g *Generator) generateIndexOptionDefinition(indexOptions []IndexOption) string {

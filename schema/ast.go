@@ -260,6 +260,7 @@ type Index struct {
 	where             parser.Expr    // for Postgres `Partial Indexes`
 	included          []string       // for MSSQL
 	clustered         *bool          // nil=unspecified, true=CLUSTERED, false=NONCLUSTERED
+	invisible         bool           // MySQL 8.0+ INVISIBLE index
 	partition         IndexPartition // for MSSQL
 	options           []IndexOption
 	renamedFrom       Ident // Previous index name if renamed via @renamed annotation

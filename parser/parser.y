@@ -340,6 +340,8 @@ func setDDL(yylex any, ddl *DDL) {
 %token <str> REPLICATION
 // SQL SERVER COLUMNSTORE
 %token <str> COLUMNSTORE
+// MySQL 8.0+ INVISIBLE/VISIBLE index
+%token <str> INVISIBLE VISIBLE
 // index
 %token <str> INCLUDE
 
@@ -4420,6 +4422,14 @@ index_option:
   {
     $$ = &IndexOption{Name: $1, Value: NewStrVal($3)}
   }
+| INVISIBLE
+  {
+    $$ = &IndexOption{Name: "invisible", Value: NewStrVal("invisible")}
+  }
+| VISIBLE
+  {
+    $$ = &IndexOption{Name: "invisible", Value: NewStrVal("visible")}
+  }
 | ID '=' vector_option_value
   {
     id := strings.Trim(strings.ToLower($1.Name), "`")
@@ -7396,6 +7406,8 @@ non_reserved_keyword:
 | PARTITIONS
 | PARTITION %prec LOWER_THAN_BY
 | ENGINE
+| INVISIBLE
+| VISIBLE
 
 // col_name_keyword: keywords that can be used as column names in index definitions.
 // PostgreSQL allows these as unquoted identifiers in certain contexts.
