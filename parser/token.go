@@ -1305,21 +1305,33 @@ func (tkn *Tokenizer) scanCommentType2OrTiDBComment() (int, string) {
 	return COMMENT, comment
 }
 
-// extractTiDBComment extracts the SQL from a TiDB-specific comment
-// such as /*T![auto_rand] AUTO_RANDOM(5) */
+// extractTiDBComment extracts the SQL from a TiDB-specific comment.
+// Two formats are supported:
+//   - /*T![feature_name] SQL */ — feature-gated (e.g. auto_rand, clustered_index)
+//   - /*T! SQL */               — ungated (e.g. SHARD_ROW_ID_BITS, PRE_SPLIT_REGIONS)
 func extractTiDBComment(comment string) (string, bool) {
-	// comment format: /*T![feature_name] SQL */
 	inner := comment[2 : len(comment)-2] // strip /* and */
-	if !strings.HasPrefix(inner, "T![") {
+	if !strings.HasPrefix(inner, "T!") {
 		return "", false
 	}
+
+	// Ungated form: /*T! SQL */
+	if !strings.HasPrefix(inner, "T![") {
+		sql := strings.TrimSpace(inner[2:])
+		if sql == "" {
+			return "", false
+		}
+		return sql, true
+	}
+
+	// Feature-gated form: /*T![feature_name] SQL */
 	closeBracket := strings.Index(inner, "]")
 	if closeBracket == -1 {
 		return "", false
 	}
 	feature := inner[3:closeBracket]
 	switch feature {
-	case "auto_rand":
+	case "auto_rand", "auto_id_cache":
 		// Supported features: expand the inner SQL into the token stream
 	default:
 		// Unsupported features (e.g. clustered_index): ignore
