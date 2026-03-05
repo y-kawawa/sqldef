@@ -577,6 +577,8 @@ func parseTable(mode GeneratorMode, stmt *parser.DDL, defaultSchema string, rawD
 			isConstraint = true
 		}
 
+		invisible := extractInvisibleOption(&indexOptions)
+
 		index := Index{
 			name:      nameIdent,
 			indexType: indexDef.Info.Type,
@@ -585,6 +587,7 @@ func parseTable(mode GeneratorMode, stmt *parser.DDL, defaultSchema string, rawD
 			unique:    indexDef.Info.Unique,
 			vector:    indexDef.Info.Vector,
 			clustered: indexDef.Info.Clustered,
+			invisible: invisible,
 			options:   indexOptions,
 			partition: indexPartition,
 
@@ -767,6 +770,8 @@ func parseIndex(stmt *parser.DDL, rawDDL string, mode GeneratorMode) (Index, err
 		renameFrom = extractRenameFrom(comment)
 	}
 
+	invisible := extractInvisibleOption(&indexOptions)
+
 	return Index{
 		name:              nameIdent,
 		indexType:         stmt.IndexSpec.Type.Name,
@@ -779,12 +784,26 @@ func parseIndex(stmt *parser.DDL, rawDDL string, mode GeneratorMode) (Index, err
 		concurrently:      stmt.IndexSpec.Concurrently,
 		constraintOptions: constraintOptions,
 		clustered:         clusteredBoolToPtr(stmt.IndexSpec.Clustered),
+		invisible:         invisible,
 		where:             where,
 		included:          includedColumns,
 		options:           indexOptions,
 		partition:         indexPartition,
 		renamedFrom:       renameFrom,
 	}, nil
+}
+
+// extractInvisibleOption removes the "invisible" option from the list and returns
+// whether the index is invisible.
+func extractInvisibleOption(options *[]IndexOption) bool {
+	for i, opt := range *options {
+		if opt.optionName == "invisible" {
+			invisible := opt.value != nil && opt.value.raw == "invisible"
+			*options = append((*options)[:i], (*options)[i+1:]...)
+			return invisible
+		}
+	}
+	return false
 }
 
 func mustConvertToInt(val string) int {

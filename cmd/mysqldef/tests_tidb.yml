@@ -262,3 +262,78 @@ DropExpressionIndex:
     ALTER TABLE t DROP INDEX idx_lower;
   down: |
     ALTER TABLE t ADD KEY idx_lower (lower(name));
+
+CreateTableWithInvisibleIndex:
+  flavor: "!mariadb"
+  legacy_ignore_quotes: false
+  desired: |
+    CREATE TABLE t (
+      id bigint NOT NULL AUTO_INCREMENT,
+      name varchar(255),
+      PRIMARY KEY (id),
+      KEY idx_name (name) INVISIBLE
+    );
+
+MakeIndexInvisible:
+  legacy_ignore_quotes: false
+  offline: true
+  current: |
+    CREATE TABLE t (
+      id bigint NOT NULL AUTO_INCREMENT,
+      name varchar(255),
+      PRIMARY KEY (id),
+      KEY idx_name (name)
+    );
+  desired: |
+    CREATE TABLE t (
+      id bigint NOT NULL AUTO_INCREMENT,
+      name varchar(255),
+      PRIMARY KEY (id),
+      KEY idx_name (name) INVISIBLE
+    );
+  up: |
+    ALTER TABLE t ALTER INDEX idx_name INVISIBLE;
+  down: |
+    ALTER TABLE t ALTER INDEX idx_name VISIBLE;
+
+MakeIndexVisible:
+  legacy_ignore_quotes: false
+  offline: true
+  current: |
+    CREATE TABLE t (
+      id bigint NOT NULL AUTO_INCREMENT,
+      name varchar(255),
+      PRIMARY KEY (id),
+      KEY idx_name (name) INVISIBLE
+    );
+  desired: |
+    CREATE TABLE t (
+      id bigint NOT NULL AUTO_INCREMENT,
+      name varchar(255),
+      PRIMARY KEY (id),
+      KEY idx_name (name)
+    );
+  up: |
+    ALTER TABLE t ALTER INDEX idx_name VISIBLE;
+  down: |
+    ALTER TABLE t ALTER INDEX idx_name INVISIBLE;
+
+CreateTableWithInvisibleIndexVersionComment:
+  legacy_ignore_quotes: false
+  offline: true
+  current: |
+    CREATE TABLE t (
+      id bigint NOT NULL AUTO_INCREMENT,
+      name varchar(255),
+      PRIMARY KEY (id),
+      KEY idx_name (name) /*!80000 INVISIBLE */
+    );
+  desired: |
+    CREATE TABLE t (
+      id bigint NOT NULL AUTO_INCREMENT,
+      name varchar(255),
+      PRIMARY KEY (id),
+      KEY idx_name (name) INVISIBLE
+    );
+  up: ""
+  down: ""
